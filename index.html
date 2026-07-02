@@ -45,36 +45,39 @@
         location.reload();
     }
 
-    async function sendToServer() {
-        const userInput = document.getElementById('userInput').value;
-        const responseArea = document.getElementById('responseArea');
-        const apiKey = localStorage.getItem('gemini_key');
+async function sendToServer() {
+    const userInput = document.getElementById('userInput').value;
+    const responseArea = document.getElementById('responseArea');
+    const apiKey = localStorage.getItem('gemini_key');
 
-        if (!apiKey) return alert("请先输入API Key");
-        
-        responseArea.innerText += "\n\n> " + userInput + "\n(天道演算中...)";
+    if (!apiKey) return alert("请先输入API Key");
+    responseArea.innerText += "\n\n> " + userInput + "\n(天道演算中...)";
 
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    "contents": [{ "parts": [{ "text": GAME_RULES + "\n\n玩家操作：" + userInput }] }]
-                })
-            });
+    try {
+        // 使用标准的 Header 传递方式，地址保持最简
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey // 将 Key 放入 Header，这是最标准做法
+            },
+            body: JSON.stringify({
+                "contents": [{ "parts": [{ "text": GAME_RULES + "\n\n玩家操作：" + userInput }] }]
+            })
+        });
 
-            const data = await response.json();
-            
-            if (data.candidates && data.candidates[0].content.parts[0].text) {
-                const reply = data.candidates[0].content.parts[0].text;
-                responseArea.innerText += "\n\n主持人: " + reply;
-            } else {
-                throw new Error("AI 接口未返回数据，请检查 Key 或网络拦截。");
-            }
-        } catch (e) {
-            responseArea.innerText += "\n[错误]: " + e.message;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`错误 ${response.status}: ${errorData.error.message}`);
         }
+
+        const data = await response.json();
+        const reply = data.candidates[0].content.parts[0].text;
+        responseArea.innerText += "\n\n主持人: " + reply;
+    } catch (e) {
+        responseArea.innerText += "\n[错误]: " + e.message;
     }
+}
 
     // 初始化界面逻辑
     window.onload = () => {
