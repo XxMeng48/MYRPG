@@ -1,19 +1,38 @@
-async function sendToServer() {
-    const userInput = document.getElementById('userInput').value;
-    const responseArea = document.getElementById('responseArea');
-    
-    responseArea.innerText = "正在思考...";
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>我的跑团游戏</h1>
+    <div id="responseArea" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll;"></div>
+    <input type="text" id="userInput" placeholder="输入你的指令...">
+    <button onclick="sendToServer()">发送</button>
 
-    // 这一步是将你的问题发送到 Google Gemini 的 API
-    // 你需要把 'YOUR_API_KEY' 换成你刚才申请的那串 AIza 开头的密钥
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_API_KEY', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            "contents": [{ "parts": [{ "text": userInput }] }]
-        })
-    });
+    <script>
+        // 你主宰规则的秘密武器
+        const GAME_RULES = "你是一个跑团主持人。这是你的设定：[在此处粘贴你的JSON逻辑]。玩家输入的每一次操作，都必须基于这些数值判定，并在回复中以表格形式显示玩家当前的HP和状态。";
 
-    const data = await response.json();
-    responseArea.innerText = data.candidates[0].content.parts[0].text;
-}
+        async function sendToServer() {
+            const userInput = document.getElementById('userInput').value;
+            const responseArea = document.getElementById('responseArea');
+            
+            // 将规则与用户输入合并，确保AI永远无法跳出你的设定
+            const fullPrompt = GAME_RULES + "\n玩家操作：" + userInput;
+
+            responseArea.innerText += "\n[我]: " + userInput + "\n正在思考...";
+
+            // 使用你的后端环境变量（注意：前端直接调API会暴露Key，
+            // 以后我们要用Vercel Function来保护，目前先跑通逻辑）
+            const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=你的API_KEY', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    "contents": [{ "parts": [{ "text": fullPrompt }] }]
+                })
+            });
+
+            const data = await response.json();
+            const reply = data.candidates[0].content.parts[0].text;
+            responseArea.innerText = "主持人: " + reply;
+        }
+    </script>
+</body>
+</html>
