@@ -5,7 +5,7 @@
     <title>大荒百世传奇 - 轮回修仙模拟器</title>
     <style>
         body { background-color: #121212; color: #d4d4d4; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
-        .box { width: 100%; max-width: 800px; border: 1px solid #444; padding: 20px; background: #1a1a1a; }
+        .box { width: 100%; max-width: 800px; border: 1px solid #444; padding: 20px; background: #1a1a1x; }
         #game-interface { display: none; }
         input { width: 100%; padding: 10px; margin: 10px 0; background: #333; color: white; border: 1px solid #555; }
         button { padding: 10px 20px; cursor: pointer; background: #8c221a; color: white; border: none; }
@@ -24,12 +24,13 @@
     <div id="responseArea" style="height: 400px; overflow-y: scroll; border: 1px solid #333; padding: 10px; margin-bottom: 10px; white-space: pre-wrap;"></div>
     <input type="text" id="userInput" placeholder="输入修仙指令...">
     <button onclick="sendToServer()">发送指令</button>
-    <button onclick="localStorage.removeItem('gemini_key');location.reload();" style="background:#555;">退出</button>
+    <button onclick="logout()" style="background:#555;">退出轮回</button>
 </div>
 
-<script src="rules.js"></script> 
-
 <script>
+    // 最终形态：直接在 HTML 内定义规则，不再依赖外部 rules.js 文件
+    const GAME_RULES = "你是一个冷酷的RPG掌局者，精通东方玄幻，扮演天道规则。每一轮输出必须包含：【天道运转】（思维链）、正文、面板（命格/众生/记忆回廊/天机玄示）。严禁爽文文风，字数保持在800-1000字，严禁现代词汇。";
+
     async function sendToServer() {
         const userInput = document.getElementById('userInput').value;
         const responseArea = document.getElementById('responseArea');
@@ -40,7 +41,8 @@
         responseArea.innerText += "\n\n> " + userInput + "\n(天道演算中...)";
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+            // 使用 gemini-1.5-flash 模型，它是目前最快且最稳定的选择
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -49,11 +51,27 @@
             });
 
             const data = await response.json();
-            const reply = data.candidates[0].content.parts[0].text;
-            responseArea.innerText += "\n\n主持人: " + reply;
+            
+            // 修正错误处理：检查数据是否包含回复
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                const reply = data.candidates[0].content.parts[0].text;
+                responseArea.innerText += "\n\n主持人: " + reply;
+            } else {
+                throw new Error("AI 未返回有效内容，请检查 API Key 是否有效。");
+            }
         } catch (e) {
-            responseArea.innerText += "\n[错误]: 连接失败，请检查API Key或网络。";
+            responseArea.innerText += "\n[错误]: " + e.message;
         }
+    }
+
+    function saveApiKey() {
+        localStorage.setItem('gemini_key', document.getElementById('apiKeyInput').value);
+        location.reload();
+    }
+
+    function logout() {
+        localStorage.removeItem('gemini_key');
+        location.reload();
     }
 
     window.onload = () => {
@@ -62,10 +80,6 @@
             document.getElementById('game-interface').style.display = 'block';
         }
     };
-    function saveApiKey() {
-        localStorage.setItem('gemini_key', document.getElementById('apiKeyInput').value);
-        location.reload();
-    }
 </script>
 </body>
 </html>
