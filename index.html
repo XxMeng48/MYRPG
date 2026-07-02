@@ -28,38 +28,12 @@
     <button onclick="logout()" style="background:#555;">退出轮回</button>
 </div>
 
+<script src="rules.js"></script> 
+
 <script>
-    // 你的游戏核心设定逻辑（嵌入了 JSON 中的 world_book 等核心指令）
-    const SYSTEM_PROMPT = `你是一个冷酷的修仙游戏主持人，遵循以下设定：
-    1. 观察者视角：精确记录人、神、魔三界的演变。
-    2. 文风要求：古典仙侠风格，严禁出现现代科技词汇。
-    3. 判定逻辑：每一轮输出必须包含：【天道运转】（思维链）、正文、面板（命格/众生/记忆回廊/天机玄示）。
-    4. 轮回机制：主角死亡后转世记录。
-    5. 严禁替玩家做决定。
-    详细世界观设定：[在此处粘贴你JSON里的 world_book 详细内容]`;
-
-    function saveApiKey() {
-        const key = document.getElementById('apiKeyInput').value;
-        if (key.startsWith("AIza")) {
-            localStorage.setItem('gemini_key', key);
-            location.reload();
-        } else {
-            alert("API Key 格式似乎不对，请检查！");
-        }
-    }
-
-    function logout() {
-        localStorage.removeItem('gemini_key');
-        location.reload();
-    }
-
-    window.onload = () => {
-        if (localStorage.getItem('gemini_key')) {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('game-interface').style.display = 'block';
-        }
-    };
-
+    // 这里不再需要手动输入设定了，直接使用 GAME_RULES 变量
+    // 你之前代码中 sendToServer 函数里的 SYSTEM_PROMPT 替换为以下逻辑：
+    
     async function sendToServer() {
         const userInput = document.getElementById('userInput').value;
         const responseArea = document.getElementById('responseArea');
@@ -72,7 +46,10 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    "contents": [{ "parts": [{ "text": SYSTEM_PROMPT + "\n\n玩家操作：" + userInput }] }]
+                    "contents": [{ 
+                        // 这里直接调用你 rules.js 里的 GAME_RULES 变量，AI 将完全读取你的 JSON
+                        "parts": [{ "text": GAME_RULES + "\n\n玩家操作：" + userInput }] 
+                    }]
                 })
             });
 
@@ -80,7 +57,7 @@
             const reply = data.candidates[0].content.parts[0].text;
             responseArea.innerText = "主持人: " + reply;
         } catch (e) {
-            responseArea.innerText += "\n[错误]: 连接失败，请检查 API Key 是否有效。";
+            responseArea.innerText += "\n[错误]: 连接失败。";
         }
     }
 </script>
